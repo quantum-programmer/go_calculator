@@ -14,10 +14,14 @@ var romanToArabic = map[string]int{
 	"VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10,
 }
 
-// Map for Arabic to Roman conversion
-var arabicToRoman = map[int]string{
-	1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
-	6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
+// Slices for Arabic to Roman conversion
+var arabicToRoman = []struct {
+	Value  int
+	Symbol string
+}{
+	{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"},
+	{100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"},
+	{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
 }
 
 func main() {
@@ -80,7 +84,7 @@ func calculate(input string) (string, error) {
 		if result < 1 {
 			return "", fmt.Errorf("result is less than I in Roman numerals")
 		}
-		return arabicToRoman[result], nil
+		return arabicToRomanConvert(result), nil
 	} else {
 		return strconv.Itoa(result), nil
 	}
@@ -94,4 +98,15 @@ func isRomanNumber(s string) bool {
 func isArabicNumber(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil
+}
+
+func arabicToRomanConvert(num int) string {
+	var result strings.Builder
+	for _, pair := range arabicToRoman {
+		for num >= pair.Value {
+			result.WriteString(pair.Symbol)
+			num -= pair.Value
+		}
+	}
+	return result.String()
 }
