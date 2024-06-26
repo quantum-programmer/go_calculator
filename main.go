@@ -10,8 +10,7 @@ import (
 
 // Map for Roman to Arabic conversion
 var romanToArabic = map[string]int{
-	"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5,
-	"VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10,
+	"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000,
 }
 
 // Slices for Arabic to Roman conversion
@@ -29,18 +28,19 @@ func main() {
 	fmt.Print("Enter the expression: ")
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
-	result, err := calculate(input)
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println(result)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Error:", r)
+		}
+	}()
+	result := calculate(input)
+	fmt.Println(result)
 }
 
-func calculate(input string) (string, error) {
+func calculate(input string) string {
 	parts := strings.Fields(input)
 	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid format")
+		panic("invalid format")
 	}
 
 	aStr, operator, bStr := parts[0], parts[1], parts[2]
@@ -48,19 +48,26 @@ func calculate(input string) (string, error) {
 	var isRoman bool
 
 	if isRomanNumber(aStr) && isRomanNumber(bStr) {
-		a = romanToArabic[aStr]
-		b = romanToArabic[bStr]
+		var err error
+		a, err = romanToArabicConvert(aStr)
+		if err != nil {
+			panic(err)
+		}
+		b, err = romanToArabicConvert(bStr)
+		if err != nil {
+			panic(err)
+		}
 		isRoman = true
 	} else if isArabicNumber(aStr) && isArabicNumber(bStr) {
 		a, _ = strconv.Atoi(aStr)
 		b, _ = strconv.Atoi(bStr)
 		isRoman = false
 	} else {
-		return "", fmt.Errorf("mixed number systems")
+		panic("mixed number systems")
 	}
 
 	if a < 1 || a > 10 || b < 1 || b > 10 {
-		return "", fmt.Errorf("numbers must be between 1 and 10")
+		panic("numbers must be between 1 and 10")
 	}
 
 	var result int
@@ -73,31 +80,49 @@ func calculate(input string) (string, error) {
 		result = a * b
 	case "/":
 		if b == 0 {
-			return "", fmt.Errorf("division by zero")
+			panic("division by zero")
 		}
 		result = a / b
 	default:
-		return "", fmt.Errorf("invalid operator")
+		panic("invalid operator")
 	}
 
 	if isRoman {
 		if result < 1 {
-			return "", fmt.Errorf("result is less than I in Roman numerals")
+			panic("result is less than I in Roman numerals")
 		}
-		return arabicToRomanConvert(result), nil
+		return arabicToRomanConvert(result)
 	} else {
-		return strconv.Itoa(result), nil
+		return strconv.Itoa(result)
 	}
 }
 
 func isRomanNumber(s string) bool {
-	_, exists := romanToArabic[s]
-	return exists
+	_, err := romanToArabicConvert(s)
+	return err == nil
 }
 
 func isArabicNumber(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil
+}
+
+func romanToArabicConvert(s string) (int, error) {
+	total := 0
+	prev := 0
+	for i := 0; i < len(s); i++ {
+		value, ok := romanToArabic[string(s[i])]
+		if !ok {
+			return 0, fmt.Errorf("invalid Roman numeral")
+		}
+		if value > prev {
+			total += value - 2*prev
+		} else {
+			total += value
+		}
+		prev = value
+	}
+	return total, nil
 }
 
 func arabicToRomanConvert(num int) string {
